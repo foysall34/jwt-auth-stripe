@@ -334,6 +334,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Product
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+from .models import Product, Payment 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -380,3 +384,51 @@ class StripeCheckoutView(APIView):
             return Response({"error": "Invalid product ID"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(APIView):
+    def post(self, request):
+        payload = request.body
+        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET  
+
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, endpoint_secret
+            )
+        except ValueError:
+        
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except stripe.error.SignatureVerificationError:
+       
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+
+            customer_email = session.get("customer_details", {}).get("email")
+            amount_total = session.get("amount_total") / 100
+            payment_intent = session.get("payment_intent")
+
+            Payment.objects.create(
+                email=customer_email,
+                amount=amount_total,
+                stripe_payment_intent=payment_intent,
+                status="success"
+            )
+
+        elif event["type"] == "payment_intent.payment_failed":
+            session = event["data"]["object"]
+            Payment.objects.create(
+                stripe_payment_intent=session.get("id"),
+                status="failed"
+            )
+
+        return Response(status=status.HTTP_200_OK)

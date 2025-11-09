@@ -7,7 +7,8 @@ from .views import (
     ChangePasswordView,
     LogoutView,
     ResendOtpView,
-    StripeCheckoutView
+    StripeCheckoutView,
+    StripeWebhookView
 
 
 )
@@ -38,6 +39,8 @@ urlpatterns = [
     path('orders/', views.order_list_create, name='order-list-create'),
     path('orders/<int:pk>/', views.order_detail, name='order-detail'),
     path("create-checkout-session/", StripeCheckoutView.as_view(), name="create-checkout-session"),
+    path("webhook/", StripeWebhookView.as_view(), name="stripe-webhook"),
+
 
 
    
