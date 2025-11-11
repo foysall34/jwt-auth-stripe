@@ -432,3 +432,15 @@ class StripeWebhookView(APIView):
             )
 
         return Response(status=status.HTTP_200_OK)
+
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .task import send_email_task
+
+@api_view(['POST'])
+def send_email_view(request):
+    email = request.data.get('email')
+    send_email_task.delay(email)  #  Celery runs this in background
+    return Response({"message": "Email task received! Processing in background..."})
