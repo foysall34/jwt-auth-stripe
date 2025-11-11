@@ -45,8 +45,14 @@ urlpatterns = [
 
     path('send-test-email/', send_email_view, name='send-test-email'),
 
-
-
-   
     
 ]
+
+
+
+
+# pip install celery redis
+# redis-cli ping
+
+# sudo service redis-server start
+# celery -A project_root worker --loglevel=info

@@ -7,3 +7,10 @@ def send_email_task(email):
     time.sleep(5)
     print(" Email sent successfully!")
     return "Email sent"
+
+
+
+
+
+
+
