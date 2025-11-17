@@ -49,7 +49,7 @@ urlpatterns = [
 ]
 
 
-
+https://www.figma.com/design/E2gT6kT0Ql3z5vxlkyDx4m/Qoupon-Mobile-App-Design?node-id=0-1&p=f&t=m9OeuYF5DXm7Xy23-0
 
 # pip install celery redis
 # redis-cli ping
