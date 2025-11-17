@@ -390,31 +390,32 @@ class StripeCheckoutView(APIView):
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
-
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeWebhookView(APIView):
     def post(self, request):
         payload = request.body
+        print(payload)
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
-        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET  
+        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
 
         try:
             event = stripe.Webhook.construct_event(
                 payload, sig_header, endpoint_secret
             )
         except ValueError:
-        
+   
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
         except stripe.error.SignatureVerificationError:
-       
+      
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-
+     
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
 
             customer_email = session.get("customer_details", {}).get("email")
-            amount_total = session.get("amount_total") / 100
+            amount_total = (session.get("amount_total") or 0) / 100
             payment_intent = session.get("payment_intent")
 
             Payment.objects.create(
@@ -424,15 +425,16 @@ class StripeWebhookView(APIView):
                 status="success"
             )
 
+ 
         elif event["type"] == "payment_intent.payment_failed":
             session = event["data"]["object"]
+
             Payment.objects.create(
                 stripe_payment_intent=session.get("id"),
                 status="failed"
             )
 
         return Response(status=status.HTTP_200_OK)
-
 
 
 from rest_framework.decorators import api_view
@@ -444,3 +446,17 @@ def send_email_view(request):
     email = request.data.get('email')
     send_email_task.delay(email)  #  Celery runs this in background
     return Response({"message": "Email task received! Processing in background..."})
+
+
+
+
+
+# For Model views.py -------------------------
+
+from rest_framework.viewsets import ModelViewSet
+from .models import Product
+from .serializers import ProductSerializer
+
+class ProductViewSet(ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
